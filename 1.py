@@ -1,3 +1,5 @@
+# SCRIPT PARA OS SEM ENCARREGADO
+
 import tkinter as tk
 import pyautogui
 import time
@@ -7,11 +9,9 @@ def obter_texto_e_executar():
     Ordem = entry1.get()
     Funcionario1 = entry2.get()
     Funcionario2 = entry3.get()
-    Funcionario3 = entry4.get()
-    Data1 = entry5.get()
-    HoraInicial1 = entry6.get()
-    HoraFinal1 = entry7.get()
-    HoraFinal2 = entry8.get()
+    Data1 = entry4.get()
+    HoraInicial1 = entry5.get()
+    HoraFinal1 = entry6.get()
     
 
     root.destroy()  # Fecha a janela Tkinter após obter os dados
@@ -24,11 +24,11 @@ def obter_texto_e_executar():
 
     time.sleep(2)
 
-    # CAMPO UTILIZADOS
-    pyautogui.moveTo(909, 258)
-    pyautogui.click()
+    # # CAMPO UTILIZADOS
+    # pyautogui.moveTo(909, 258)
+    # pyautogui.click()
 
-    time.sleep(2)
+    # time.sleep(2)
 
     # SCROLL 
     pyautogui.moveTo(1357, 704)
@@ -96,39 +96,6 @@ def obter_texto_e_executar():
     time.sleep(0.75)
     pyautogui.typewrite(HoraFinal1)
 
-    # NOVA LINHA TERCEIRO FUNCIONÁRIO
-    pyautogui.press('enter')
-
-    time.sleep(1)
-
-    # SCROLL PRA CIMA
-    pyautogui.moveTo(1355, 337)
-    pyautogui.click()
-
-    # NOME TERCEIRO FUNCIONÁRIO
-    pyautogui.moveTo(567, 559)
-    pyautogui.click()
-    time.sleep(0.75)
-    pyautogui.typewrite(Funcionario3)
-
-    # DATA TERCEIRO FUNCIONÁRIO
-    pyautogui.moveTo(994, 559)
-    pyautogui.click()
-    time.sleep(0.75)
-    pyautogui.typewrite(Data1)
-
-    # HORA INICIAL TERCEIRO FUNCIONÁRIO
-    pyautogui.moveTo(1111, 559)
-    pyautogui.click()
-    time.sleep(0.75)
-    pyautogui.typewrite(HoraInicial1)
-
-    # HORA FINAL TERCEIRO FUNCIONÁRIO
-    pyautogui.moveTo(1197, 559)
-    pyautogui.click()
-    time.sleep(0.75)
-    pyautogui.typewrite(HoraFinal2)
-
     # BOTÃO SALVAR
     pyautogui.moveTo(293, 221)
     pyautogui.click()
@@ -142,16 +109,16 @@ def obter_texto_e_executar():
     # BOTÃO SALVAR EMAND
     pyautogui.moveTo(1007, 657)
     pyautogui.click()
-    time.sleep(15)
+    # time.sleep(15)
 
-    # BOTÃO EMAND NOVAMENTE
-    pyautogui.moveTo(427, 222)
-    pyautogui.click()
-    time.sleep(2)
+    # # BOTÃO EMAND NOVAMENTE
+    # pyautogui.moveTo(427, 222)
+    # pyautogui.click()
+    # time.sleep(2)
 
-    # BOTÃO SALVAR EMAND NOVAMENTE
-    pyautogui.moveTo(1007, 657)
-    pyautogui.click()
+    # # BOTÃO SALVAR EMAND NOVAMENTE
+    # pyautogui.moveTo(1007, 657)
+    # pyautogui.click()
 
 # Cria a janela principal do Tkinter
 root = tk.Tk()
@@ -173,34 +140,24 @@ label3.grid(row=2, column=0, padx=5, pady=5)
 entry3 = tk.Entry(root)
 entry3.grid(row=2, column=1, padx=5, pady=5)
 
-label4 = tk.Label(root, text="Encarregado:")
+label4 = tk.Label(root, text="Data:")
 label4.grid(row=3, column=0, padx=5, pady=5)
 entry4 = tk.Entry(root)
 entry4.grid(row=3, column=1, padx=5, pady=5)
 
-label5 = tk.Label(root, text="Data:")
+label5 = tk.Label(root, text="Hora Inicial:")
 label5.grid(row=4, column=0, padx=5, pady=5)
 entry5 = tk.Entry(root)
 entry5.grid(row=4, column=1, padx=5, pady=5)
 
-label6 = tk.Label(root, text="Hora Inicial:")
+label6 = tk.Label(root, text="Hora Final:")
 label6.grid(row=5, column=0, padx=5, pady=5)
 entry6 = tk.Entry(root)
 entry6.grid(row=5, column=1, padx=5, pady=5)
 
-label7 = tk.Label(root, text="Hora Final:")
-label7.grid(row=6, column=0, padx=5, pady=5)
-entry7 = tk.Entry(root)
-entry7.grid(row=6, column=1, padx=5, pady=5)
-
-label8 = tk.Label(root, text="Final Encarregado:")
-label8.grid(row=7, column=0, padx=5, pady=5)
-entry8 = tk.Entry(root)
-entry8.grid(row=7, column=1, padx=5, pady=5)
-
 # Cria o botão para iniciar o preenchimento
 botao_enviar = tk.Button(root, text="Iniciar Preenchimento", command=obter_texto_e_executar)
-botao_enviar.grid(row=8, column=0, columnspan=2, pady=10)
+botao_enviar.grid(row=6, column=0, columnspan=2, pady=10)
 
 # Inicia o loop principal do Tkinter
 root.mainloop()
