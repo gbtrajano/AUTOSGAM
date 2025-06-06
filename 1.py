@@ -90,7 +90,9 @@ class AutocompleteEntry(tk.Entry):
         """Exibe as sugestões em um Listbox, mostrando 'Nome (Matrícula)'."""
         if not self.lista_sugestoes:
             self.lista_sugestoes = tk.Listbox(self.master, height=min(len(suggestions), 5), relief="flat",
-                                                bg="white", highlightthickness=1, highlightcolor="#4a7a8c")
+                                                bg=ENTRY_BG_COLOR, highlightthickness=1, highlightcolor=ACCENT_COLOR,
+                                                font=LABEL_FONT, fg=TEXT_COLOR, selectbackground=ACCENT_COLOR,
+                                                selectforeground="white")
             
             # Position the listbox relative to the entry widget
             self.update_idletasks()
@@ -211,12 +213,13 @@ def execute_pyautogui_actions(data):
     )
     
     # Handle second employee for standard and third for supervisor
-    if "Funcionario2_matricula" in data: # Standard Form
+    if "Funcionario2_matricula" in data and data["Funcionario2_matricula"]: # Standard Form, ensure matricula exists
         fill_employee_data(
             data["Funcionario2_matricula"] if data["Funcionario2_matricula"] else data["Funcionario2_nome_exibido"],
             data["Data1"], data["HoraInicial1"], data["HoraFinal1"]
         )
-    elif "Funcionario3_matricula" in data: # Supervisor Form
+    
+    if "Funcionario3_matricula" in data and data["Funcionario3_matricula"]: # Supervisor Form
          fill_employee_data(
             data["Funcionario2_matricula"] if data["Funcionario2_matricula"] else data["Funcionario2_nome_exibido"],
             data["Data1"], data["HoraInicial1"], data["HoraFinal1"]
@@ -266,35 +269,65 @@ def get_and_execute_encarregado():
 
 # --- GUI Setup ---
 root = tk.Tk()
-root.title("AUTOMAÇÃO")
+root.title("AUTOMAÇÃO DE REGISTRO DE HORAS")
 root.resizable(False, False)
-root.configure(bg="#f0f0f0")
 
-# Styles
-BG_COLOR = "#f0f0f0"
-BUTTON_COLOR = "#4a7a8c"
-BUTTON_TEXT_COLOR = "white"
-ENTRY_BG_COLOR = "white"
-LABEL_FONT = tkfont.Font(family="Segoe UI", size=10)
+# --- Define Colors and Fonts ---
+PRIMARY_COLOR = "#333333"  # Dark gray for main background
+SECONDARY_COLOR = "#f0f0f0"  # Light gray for frames and elements
+ACCENT_COLOR = "#4a7a8c"  # Blueish-gray for highlights and buttons
+TEXT_COLOR = "#333333"    # Dark text
+LIGHT_TEXT_COLOR = "white" # White text for buttons
+
+TITLE_FONT = tkfont.Font(family="Segoe UI", size=14, weight="bold")
+LABEL_FONT = tkfont.Font(family="Segoe UI", size=10, weight="bold")
+ENTRY_FONT = tkfont.Font(family="Segoe UI", size=10)
 BUTTON_FONT = tkfont.Font(family="Segoe UI", size=10, weight="bold")
 
-# Create a Notebook (tabbed interface)
-notebook = ttk.Notebook(root)
-notebook.pack(pady=10, expand=True, fill="both")
+root.configure(bg=PRIMARY_COLOR)
+
+# --- Style Configuration for ttk widgets ---
+style = ttk.Style()
+style.theme_use('clam') # 'clam' is a good modern theme base
+
+# General frame style
+style.configure("TFrame", background=SECONDARY_COLOR)
+
+# Notebook (tabs) style
+style.configure("TNotebook", background=PRIMARY_COLOR, borderwidth=0)
+style.configure("TNotebook.Tab", background=ACCENT_COLOR, foreground=LIGHT_TEXT_COLOR,
+                font=LABEL_FONT, padding=[10, 5])
+style.map("TNotebook.Tab", background=[("selected", PRIMARY_COLOR)],
+          foreground=[("selected", LIGHT_TEXT_COLOR)]) # Text color on selected tab
 
 # --- Function to create form fields ---
-def create_form_fields(parent_frame, fields_config, is_autocomplete_form=False):
+def create_form_fields(parent_frame, fields_config):
     """Creates labels and entry widgets in the given frame based on configuration."""
     entries = {}
-    for i, (label_text, entry_type) in enumerate(fields_config):
-        label = tk.Label(parent_frame, text=label_text, bg=BG_COLOR, font=LABEL_FONT)
-        label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+    for i, (label_text, entry_widget_class) in enumerate(fields_config):
+        label = tk.Label(parent_frame, text=label_text, bg=SECONDARY_COLOR, font=LABEL_FONT, fg=TEXT_COLOR)
+        label.grid(row=i, column=0, padx=15, pady=7, sticky="e") # Increased padding for better spacing
         
-        entry = entry_type(parent_frame, bg=ENTRY_BG_COLOR, relief="flat", highlightthickness=1,
-                            highlightcolor="#4a7a8c", highlightbackground="#cccccc")
-        entry.grid(row=i, column=1, padx=10, pady=5, ipady=3)
+        # Determine if it's a standard Entry or AutocompleteEntry
+        if entry_widget_class == tk.Entry:
+            entry = entry_widget_class(parent_frame, bg=LIGHT_TEXT_COLOR, relief="flat", highlightthickness=1,
+                                        highlightcolor=ACCENT_COLOR, highlightbackground=PRIMARY_COLOR, # Darker border for contrast
+                                        font=ENTRY_FONT, fg=TEXT_COLOR, insertbackground=TEXT_COLOR)
+        else: # AutocompleteEntry
+            entry = entry_widget_class(parent_frame, bg=LIGHT_TEXT_COLOR, relief="flat", highlightthickness=1,
+                                        highlightcolor=ACCENT_COLOR, highlightbackground=PRIMARY_COLOR,
+                                        font=ENTRY_FONT, fg=TEXT_COLOR, insertbackground=TEXT_COLOR)
+                                        
+        entry.grid(row=i, column=1, padx=15, pady=7, ipady=4, sticky="ew") # Increased ipady for taller entries
         entries[label_text.replace(":", "")] = entry # Store entry by cleaned label text
+    
+    # Configure column weights so the entry column expands
+    parent_frame.grid_columnconfigure(1, weight=1)
     return entries
+
+# Create a Notebook (tabbed interface)
+notebook = ttk.Notebook(root, style="TNotebook")
+notebook.pack(pady=15, padx=15, expand=True, fill="both") # Increased padding around notebook
 
 # --- Standard Form Tab ---
 frame_padrao = ttk.Frame(notebook, style="TFrame")
@@ -310,15 +343,20 @@ standard_fields = [
 ]
 entries_padrao = create_form_fields(frame_padrao, standard_fields)
 
+# Set some default values or hints (optional)
+# entries_padrao["Data"].insert(0, "DD/MM/YYYY") 
+# entries_padrao["Hora Inicial"].insert(0, "HH:MM")
+
 botao_enviar_padrao = tk.Button(
     frame_padrao, 
     text="INICIAR PREENCHIMENTO (Padrão)", 
     command=get_and_execute_standard,
-    bg=BUTTON_COLOR, fg=BUTTON_TEXT_COLOR, font=BUTTON_FONT,
-    relief="flat", padx=20, pady=8, bd=0,
-    activebackground="#3a6a7c", activeforeground="white"
+    bg=ACCENT_COLOR, fg=LIGHT_TEXT_COLOR, font=BUTTON_FONT,
+    relief="flat", padx=25, pady=10, bd=0, # Larger padding for button
+    activebackground="#3a6a7c", activeforeground="white", # Darker active state
+    cursor="hand2" # Change cursor on hover
 )
-botao_enviar_padrao.grid(row=len(standard_fields), column=0, columnspan=2, pady=20)
+botao_enviar_padrao.grid(row=len(standard_fields), column=0, columnspan=2, pady=25)
 
 # --- Supervisor Form Tab ---
 frame_encarregado = ttk.Frame(notebook, style="TFrame")
@@ -326,9 +364,9 @@ notebook.add(frame_encarregado, text="Formulário com Encarregado")
 
 encarregado_fields = [
     ("OS:", tk.Entry),
-    ("Funcionário 1:", AutocompleteEntry), # Changed to AutocompleteEntry
-    ("Funcionário 2:", AutocompleteEntry), # Changed to AutocompleteEntry
-    ("Encarregado:", AutocompleteEntry),   # Changed to AutocompleteEntry
+    ("Funcionário 1:", AutocompleteEntry),
+    ("Funcionário 2:", AutocompleteEntry),
+    ("Encarregado:", AutocompleteEntry),
     ("Data:", tk.Entry),
     ("Hora Inicial:", tk.Entry),
     ("Hora Final:", tk.Entry),
@@ -338,12 +376,13 @@ entries_encarregado = create_form_fields(frame_encarregado, encarregado_fields)
 
 botao_enviar_encarregado = tk.Button(
     frame_encarregado,
-    text="Iniciar Preenchimento (Encarregado)",
+    text="INICIAR PREENCHIMENTO (Encarregado)", # Consistent button text
     command=get_and_execute_encarregado,
-    bg=BUTTON_COLOR, fg=BUTTON_TEXT_COLOR, font=BUTTON_FONT,
-    relief="flat", padx=20, pady=8, bd=0,
-    activebackground="#3a6a7c", activeforeground="white"
+    bg=ACCENT_COLOR, fg=LIGHT_TEXT_COLOR, font=BUTTON_FONT,
+    relief="flat", padx=25, pady=10, bd=0,
+    activebackground="#3a6a7c", activeforeground="white",
+    cursor="hand2"
 )
-botao_enviar_encarregado.grid(row=len(encarregado_fields), column=0, columnspan=2, pady=20)
+botao_enviar_encarregado.grid(row=len(encarregado_fields), column=0, columnspan=2, pady=25)
 
 root.mainloop()
