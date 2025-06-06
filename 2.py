@@ -24,7 +24,7 @@ def obter_texto_e_executar():
     pyautogui.typewrite(Ordem)
     pyautogui.press('enter')
 
-    time.sleep(2)
+    time.sleep(3.5)
 
     # # CAMPO UTILIZADOS
     # pyautogui.moveTo(909, 258)
@@ -136,15 +136,15 @@ def obter_texto_e_executar():
     pyautogui.click()
     time.sleep(2)
 
-    # BOTÃO EMAND
-    pyautogui.moveTo(427, 222)
-    pyautogui.click()
-    time.sleep(3)
+    # # BOTÃO EMAND
+    # pyautogui.moveTo(427, 222)
+    # pyautogui.click()
+    # time.sleep(3)
 
-    # BOTÃO SALVAR EMAND
-    pyautogui.moveTo(1007, 657)
-    pyautogui.click()
-    # time.sleep(15)
+    # # BOTÃO SALVAR EMAND
+    # pyautogui.moveTo(1007, 657)
+    # pyautogui.click()
+    # # time.sleep(15)
 
     # # BOTÃO EMAND NOVAMENTE
     # pyautogui.moveTo(427, 222)
