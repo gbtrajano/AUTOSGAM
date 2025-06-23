@@ -5,16 +5,23 @@ from tkinter import font as tkfont
 
 # Dicionário de nomes de funcionários e suas matrículas
 funcionarios = {
+    "Adriano": "T083413177",
     "Andre Carneiro": "T070908137",
     "Andre Guerreiro": "T032323127",
     "Carlos": "T000853027",
     "Genivaldo": "T076337747",
+    "Ivan": "T107535307",
     "Jonathan": "T175557747",
+    "Leonardo": "T123334397",
     "Luis": "T084053577",
     "Marcelo": "T015619407",
     "Reginaldo": "T135383327",
+    "Ricardo": "T103416317",
+    "Robson": "T095551577",
+    "Rodrigo": "T090621807",
     "Leandro": "T089556007",
-    "Ulysses": "T000257897"
+    "Ulysses": "T000257897",
+    "Ygor": "T137582997"
 }
 
 class AutocompleteEntry(tk.Entry):
@@ -104,7 +111,7 @@ def obter_texto_e_executar():
     # CAMPO DA OS
     pyautogui.moveTo(87, 221)
     pyautogui.click()
-    pyautogui.typewrite(Ordem)
+    pyautogui.typewrite("OS" + Ordem)
     pyautogui.press('enter')
 
     time.sleep(3.5)
@@ -178,13 +185,13 @@ def obter_texto_e_executar():
 
 # Configuração da janela principal
 root = tk.Tk()
-root.title("AUTOMAÇÃO")
+root.title("SCRIPT")
 root.resizable(False, False)
 root.configure(bg="#f0f0f0")
 
 # Estilos
-cor_fundo = "#f0f0f0"
-cor_botao = "#4a7a8c"
+cor_fundo = "#eee"
+cor_botao = "black"
 cor_texto_botao = "white"
 cor_entry = "white"
 fonte_labels = tkfont.Font(family="Segoe UI", size=10)
@@ -192,7 +199,7 @@ fonte_botao = tkfont.Font(family="Segoe UI", size=10, weight="bold")
 
 # Frame principal para organização
 main_frame = tk.Frame(root, bg=cor_fundo)
-main_frame.pack(pady=20)
+main_frame.pack(pady=10)
 
 # Função para criar campos de forma consistente
 def criar_campo(frame, texto, linha, autocomplete=False):
@@ -233,7 +240,7 @@ entry7 = criar_campo(main_frame, "Hora Final:", 5)
 # Botão estilizado
 botao_enviar = tk.Button(
     main_frame, 
-    text="INICIAR PREENCHIMENTO", 
+    text="INICIAR", 
     command=obter_texto_e_executar,
     bg=cor_botao,
     fg=cor_texto_botao,
@@ -242,7 +249,7 @@ botao_enviar = tk.Button(
     padx=20,
     pady=8,
     bd=0,
-    activebackground="#3a6a7c",
+    activebackground="#0000ff",
     activeforeground="white"
 )
 botao_enviar.grid(row=8, column=0, columnspan=2, pady=20)
