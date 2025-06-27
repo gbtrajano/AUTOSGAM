@@ -3,18 +3,22 @@ import pyautogui
 import time
 from tkinter import font as tkfont
 
-# Dicionário de nomes de funcionários e suas matrículas
+# DICIONÁRIO DE NOMES DE FUNCIONÁRIOS E SUAS MATRÍCULAS
 funcionarios = {
     "Adriano": "T083413177",
+    "Alexandre": "T084846967",
     "Andre Carneiro": "T070908137",
     "Andre Guerreiro": "T032323127",
     "Carlos": "T000853027",
     "Genivaldo": "T076337747",
     "Ivan": "T107535307",
+    "John": "T112999667",
     "Jonathan": "T175557747",
     "Leonardo": "T123334397",
     "Luis": "T084053577",
+    "Paulo Vitor Guina": "T134249567",
     "Marcelo": "T015619407",
+    "Mauricio": "T093844777",   
     "Reginaldo": "T135383327",
     "Ricardo": "T103416317",
     "Robson": "T095551577",
@@ -23,7 +27,10 @@ funcionarios = {
     "Ulysses": "T000257897",
     "Ygor": "T137582997"
 }
+# // DICIONÁRIO DE NOMES DE FUNCIONÁRIOS E SUAS MATRÍCULAS
 
+
+# FUNÇÃO DE AUTOCOMPLETAR OS INPUTS COM O NOME DOS FUNCIONÁRIOS
 class AutocompleteEntry(tk.Entry):
     def __init__(self, dict_funcionarios, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -98,15 +105,15 @@ class AutocompleteEntry(tk.Entry):
                 self.lb.selection_set(index + 1)
                 self.lb.activate(index + 1)
         return "break"
+# // FUNÇÃO DE AUTOCOMPLETAR COM O NOME DOS FUNCIONÁRIOS
 
+# OBTER O TEXTO DO TKINTER E EXECUTAR O PYAUTOGUI
 def obter_texto_e_executar():
-    """Obtém o texto das entradas do formulário Tkinter e executa o PyAutoGUI."""
     Ordem = entry1.get()
-    Funcionario1 = entry2.get()
-    Funcionario2 = entry3.get()
-    Data1 = entry5.get()
-    HoraInicial1 = entry6.get()
-    HoraFinal1 = entry7.get()
+    Funcionario = entry2.get()
+    Data = entry3.get()
+    HoraInicial = entry4.get()
+    HoraFinal = entry5.get()
 
     # CAMPO DA OS
     pyautogui.moveTo(87, 221)
@@ -129,61 +136,31 @@ def obter_texto_e_executar():
     # PRIMEIRA MÃO DE OBRA
     pyautogui.moveTo(567, 579)
     pyautogui.click()
-    pyautogui.typewrite(Funcionario1)
+    pyautogui.typewrite(Funcionario)
 
     # PRIMEIRA DATA
     pyautogui.press('tab')
     pyautogui.press('tab')
     time.sleep(0.75)
-    pyautogui.typewrite(Data1)
+    pyautogui.typewrite(Data)
 
     # PRIMEIRA HORA INICIAL
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraInicial1)
+    pyautogui.typewrite(HoraInicial)
 
     # PRIMEIRA HORA FINAL
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraFinal1)
-
-    # NOVA LINHA SEGUNDO FUNCIONÁRIO
-    pyautogui.press('enter')
-
-    time.sleep(1)
-
-    # SCROLL PRA CIMA
-    pyautogui.moveTo(1355, 337)
-    pyautogui.click()
-
-    # NOME SEGUNDO FUNCIONÁRIO
-    pyautogui.moveTo(567, 559)
-    pyautogui.click()
-    time.sleep(0.75)
-    pyautogui.typewrite(Funcionario2)
-
-    # DATA SEGUNDO FUNCIONÁRIO
-    pyautogui.press('tab')
-    pyautogui.press('tab')
-    time.sleep(0.75)
-    pyautogui.typewrite(Data1)
-
-    # HORA INICIAL SEGUNDO FUNCIONÁRIO
-    pyautogui.press('tab')
-    time.sleep(1)
-    pyautogui.typewrite(HoraInicial1)
-
-    # HORA FINAL SEGUNDO FUNCIONÁRIO
-    pyautogui.press('tab')
-    time.sleep(1)
-    pyautogui.typewrite(HoraFinal1)
+    pyautogui.typewrite(HoraFinal)
 
     # BOTÃO SALVAR
     pyautogui.moveTo(293, 221)
     pyautogui.click()
     time.sleep(2)
+# // OBTER O TEXTO DO TKINTER E EXECUTAR O PYAUTOGUI
 
-# Configuração da janela principal
+# CONFIGURAÇÃO DO TKINTER
 root = tk.Tk()
 root.title("SCRIPT")
 root.resizable(False, False)
@@ -231,11 +208,10 @@ def criar_campo(frame, texto, linha, autocomplete=False):
 
 # Criando os campos usando a função
 entry1 = criar_campo(main_frame, "OS:", 0)
-entry2 = criar_campo(main_frame, "Funcionário 1:", 1, autocomplete=True)
-entry3 = criar_campo(main_frame, "Funcionário 2:", 2, autocomplete=True)
-entry5 = criar_campo(main_frame, "Data:", 3)
-entry6 = criar_campo(main_frame, "Hora Inicial:", 4)
-entry7 = criar_campo(main_frame, "Hora Final:", 5)
+entry2 = criar_campo(main_frame, "Funcionário:", 1, autocomplete=True)
+entry3 = criar_campo(main_frame, "Data:", 2)
+entry4 = criar_campo(main_frame, "Hora Inicial:", 3)
+entry5 = criar_campo(main_frame, "Hora Final:", 4)
 
 # Botão estilizado
 botao_enviar = tk.Button(
@@ -263,3 +239,4 @@ for child in main_frame.winfo_children():
     child.grid_configure(padx=5, pady=2)
 
 root.mainloop()
+# // CONFIGURAÇÃO DO TKINTER
