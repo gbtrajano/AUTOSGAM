@@ -1,7 +1,6 @@
-import tkinter as tk
+import customtkinter as ctk
 import pyautogui
 import time
-from tkinter import font as tkfont
 
 # DICIONÁRIO DE NOMES DE FUNCIONÁRIOS E SUAS MATRÍCULAS
 funcionarios = {
@@ -9,6 +8,7 @@ funcionarios = {
     "Alexandre": "T084846967",
     "Andre Carneiro": "T070908137",
     "Andre Guerreiro": "T032323127",
+    "Caio": "T189293597",
     "Carlos": "T000853027",
     "Genivaldo": "T076337747",
     "Ivan": "T107535307",
@@ -18,7 +18,7 @@ funcionarios = {
     "Luis": "T084053577",
     "Paulo Vitor Guina": "T134249567",
     "Marcelo": "T015619407",
-    "Mauricio": "T093844777",   
+    "Mauricio": "T093844777",
     "Reginaldo": "T135383327",
     "Ricardo": "T103416317",
     "Robson": "T095551577",
@@ -27,106 +27,201 @@ funcionarios = {
     "Ulysses": "T000257897",
     "Ygor": "T137582997"
 }
-# // DICIONÁRIO DE NOMES DE FUNCIONÁRIOS E SUAS MATRÍCULAS
 
-# FUNÇÃO DE AUTOCOMPLETAR OS INPUTS COM O NOME DOS FUNCIONÁRIOS
-class AutocompleteEntry(tk.Entry):
-    def __init__(self, dict_funcionarios, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class AutocompleteEntry(ctk.CTkEntry):
+    def __init__(self, dict_funcionarios, master=None, **kwargs):
+        super().__init__(master=master, **kwargs)
         self.dict_funcionarios = dict_funcionarios
-        self.nomes = sorted(dict_funcionarios.keys())  # Lista de nomes ordenada
-        self.var = tk.StringVar()
-        self.config(textvariable=self.var)
+        self.nomes = sorted(dict_funcionarios.keys())
+        self.var = ctk.StringVar()
+        self.configure(textvariable=self.var)
         self.bind("<KeyRelease>", self.check_input)
         self.bind("<FocusOut>", self.hide_listbox)
         self.bind("<Return>", self.select_item)
         self.bind("<Down>", self.move_down)
         self.bind("<Up>", self.move_up)
-        
-        # Listbox para exibir sugestões
-        self.lb = tk.Listbox(width=self["width"], height=5)
-        self.lb.bind("<Button-1>", self.select_item)
+
+        self.toplevel_suggestions = None # CTkToplevel window for suggestions
+        self.suggestions_frame = None    # CTkScrollableFrame inside toplevel
         self.lb_visible = False
+        self.current_selection_index = -1
+        self.suggestion_labels = []
+        self.hide_id = None # To store the after job ID for delayed hiding
 
     def check_input(self, event):
         value = self.var.get()
         if value == "":
             self.hide_listbox()
         else:
-            # Filtra a lista de nomes com base no texto digitado
             data = [nome for nome in self.nomes if value.lower() in nome.lower()]
             if data:
-                if not self.lb_visible:
-                    self.show_listbox()
-                self.lb.delete(0, tk.END)
-                for nome in data:
-                    self.lb.insert(tk.END, nome)
+                self.update_suggestions(data)
+                self.show_listbox()
             else:
                 self.hide_listbox()
 
+    def update_suggestions(self, data):
+        for label in self.suggestion_labels:
+            label.destroy()
+        self.suggestion_labels.clear()
+
+        max_display_items = 5
+        item_height = 30
+        calculated_height = min(len(data), max_display_items) * item_height
+
+        # Create/re-create toplevel and scrollable frame if not existing or destroyed
+        if self.toplevel_suggestions is None or not self.toplevel_suggestions.winfo_exists():
+            self.toplevel_suggestions = ctk.CTkToplevel(self.master)
+            self.toplevel_suggestions.overrideredirect(True) # Remove window decorations
+            self.toplevel_suggestions.attributes("-topmost", True) # Keep on top
+
+            # Bind a click event to the toplevel itself to prevent hide if background is clicked
+            self.toplevel_suggestions.bind("<Button-1>", lambda e: "break")
+
+            # Create suggestions_frame inside the toplevel with specified width and height
+            self.suggestions_frame = ctk.CTkScrollableFrame(
+                master=self.toplevel_suggestions,
+                width=self.winfo_width(), # Set width in constructor
+                height=calculated_height, # Set height in constructor
+                fg_color=("gray90", "gray18")
+            )
+            self.suggestions_frame.pack(fill="both", expand=True)
+        else:
+            # If toplevel already exists, just update the height and width of the scrollable frame
+            self.suggestions_frame.configure(height=calculated_height)
+            self.suggestions_frame.configure(width=self.winfo_width()) # Update width in case entry resized
+
+        for i, nome in enumerate(data):
+            label = ctk.CTkLabel(
+                master=self.suggestions_frame,
+                text=nome,
+                fg_color="transparent",
+                corner_radius=0,
+                padx=5,
+                pady=2,
+                anchor="w",
+                font=ctk.CTkFont(family="Segoe UI", size=11)
+            )
+            label.bind("<Enter>", lambda e, l=label, i=i: self.on_label_hover(l, i))
+            label.bind("<Leave>", lambda e, l=label, i=i: self.on_label_leave(l, i))
+            label.bind("<Button-1>", lambda e, n=nome: self.select_item_by_click(n))
+            label.pack(fill="x", padx=2, pady=1)
+            self.suggestion_labels.append(label)
+
+        self.current_selection_index = -1
+        if self.suggestion_labels:
+            self.current_selection_index = 0
+            self.highlight_selection()
+
+    def on_label_hover(self, label, index):
+        if index != self.current_selection_index:
+            label.configure(fg_color=("gray70", "gray30"))
+
+    def on_label_leave(self, label, index):
+        if index != self.current_selection_index:
+            label.configure(fg_color="transparent")
+
     def show_listbox(self):
-        if not self.lb_visible:
-            self.lb.place(x=self.winfo_x(), y=self.winfo_y() + self.winfo_height())
+        if not self.lb_visible and self.toplevel_suggestions:
+            # Get absolute coordinates of the entry on screen
+            x = self.winfo_rootx()
+            y = self.winfo_rooty() + self.winfo_height()
+            self.toplevel_suggestions.geometry(f"+{x}+{y}")
+            self.toplevel_suggestions.deiconify() # Show the window
             self.lb_visible = True
 
     def hide_listbox(self, event=None):
-        if self.lb_visible:
-            self.lb.place_forget()
-            self.lb_visible = False
+        # Get the root window for scheduling 'after' calls
+        root_window = self.master.winfo_toplevel()
+        if self.hide_id:
+            root_window.after_cancel(self.hide_id)
+            self.hide_id = None
+
+        # Schedule a delayed hide to allow click events on suggestions to register
+        self.hide_id = root_window.after(150, self._perform_hide_listbox)
+
+    def _perform_hide_listbox(self):
+        if self.toplevel_suggestions and self.toplevel_suggestions.winfo_exists():
+            self.toplevel_suggestions.withdraw() # Hide the window
+        self.lb_visible = False
+        self.current_selection_index = -1
+        for label in self.suggestion_labels:
+            label.destroy()
+        self.suggestion_labels.clear()
+        self.hide_id = None
+
+    def select_item_by_click(self, nome_selecionado):
+        root_window = self.master.winfo_toplevel()
+        if self.hide_id:
+            root_window.after_cancel(self.hide_id)
+            self.hide_id = None # Cancel pending hide
+        matricula = self.dict_funcionarios[nome_selecionado]
+        self.var.set(matricula)
+        self._perform_hide_listbox() # Immediately hide after selection
+        self.icursor(ctk.END)
 
     def select_item(self, event=None):
-        if self.lb_visible and self.lb.size() > 0:
-            if event and event.widget == self.lb:
-                index = self.lb.nearest(event.y)
-            else:
-                index = self.lb.curselection()[0] if self.lb.curselection() else 0
-            nome_selecionado = self.lb.get(index)
+        root_window = self.master.winfo_toplevel()
+        if self.hide_id:
+            root_window.after_cancel(self.hide_id)
+            self.hide_id = None # Cancel pending hide
+
+        if self.lb_visible and self.suggestion_labels and self.current_selection_index != -1:
+            nome_selecionado = self.suggestion_labels[self.current_selection_index].cget("text")
             matricula = self.dict_funcionarios[nome_selecionado]
             self.var.set(matricula)
-            self.hide_listbox()
-            self.icursor(tk.END)
+            self._perform_hide_listbox()
+            self.icursor(ctk.END)
         return "break"
 
+    def highlight_selection(self):
+        for i, label in enumerate(self.suggestion_labels):
+            if i == self.current_selection_index:
+                label.configure(fg_color=("blue", "darkblue"), text_color="white")
+            else:
+                label.configure(fg_color="transparent", text_color=("black", "white"))
+
     def move_up(self, event):
-        if self.lb_visible and self.lb.size() > 0:
-            index = self.lb.curselection()[0] if self.lb.curselection() else 0
-            if index > 0:
-                self.lb.selection_clear(0, tk.END)
-                self.lb.selection_set(index - 1)
-                self.lb.activate(index - 1)
+        if self.lb_visible and self.suggestion_labels:
+            if self.current_selection_index > 0:
+                self.current_selection_index -= 1
+                self.highlight_selection()
+            elif self.current_selection_index == 0:
+                self.current_selection_index = len(self.suggestion_labels) - 1
+                self.highlight_selection()
         return "break"
 
     def move_down(self, event):
-        if self.lb_visible and self.lb.size() > 0:
-            index = self.lb.curselection()[0] if self.lb.curselection() else -1
-            if index < self.lb.size() - 1:
-                self.lb.selection_clear(0, tk.END)
-                self.lb.selection_set(index + 1)
-                self.lb.activate(index + 1)
+        if self.lb_visible and self.suggestion_labels:
+            if self.current_selection_index < len(self.suggestion_labels) - 1:
+                self.current_selection_index += 1
+                self.highlight_selection()
+            elif self.current_selection_index == len(self.suggestion_labels) - 1:
+                self.current_selection_index = 0
+                self.highlight_selection()
         return "break"
-# // FUNÇÃO DE AUTOCOMPLETAR OS INPUTS COM O NOME DOS FUNCIONÁRIOS
 
-# OBTER O TEXTO DO TKINTER E EXECUTAR O PYAUTOGUI
 def obter_texto_e_executar():
-    """Obtém o texto das entradas do formulário Tkinter e executa o PyAutoGUI."""
-    Ordem = entry1.get()
+    OS = entry1.get()
     Funcionario1 = entry2.get()
     Funcionario2 = entry3.get()
-    Funcionario3 = entry4.get()
-    Data1 = entry5.get()
-    HoraInicial1 = entry6.get()
-    HoraFinal1 = entry7.get()
-    HoraFinal2 = entry8.get()
+    Encarregado = entry4.get()
+    Data = entry5.get()
+    HoraInicial = entry6.get()
+    HoraFinal = entry7.get()
+    HoraEncarregado = entry8.get()
 
     # CAMPO DA OS
     pyautogui.moveTo(87, 221)
     pyautogui.click()
-    pyautogui.typewrite("OS" + Ordem)
+    pyautogui.typewrite("OS52" + OS)
     pyautogui.press('enter')
+
+    entry1.delete(0, ctk.END)
 
     time.sleep(3.5)
 
-    # SCROLL 
+    # SCROLL
     pyautogui.moveTo(1357, 704)
     pyautogui.doubleClick()
 
@@ -136,28 +231,28 @@ def obter_texto_e_executar():
 
     time.sleep(2)
 
-    # PRIMEIRA MÃO DE OBRA
+    # NOME ( PRIMEIRO FUNCIONÁRIO )
     pyautogui.moveTo(567, 579)
     pyautogui.click()
     pyautogui.typewrite(Funcionario1)
 
-    # PRIMEIRA DATA
+    # DATA 
     pyautogui.press('tab')
     pyautogui.press('tab')
     time.sleep(0.75)
-    pyautogui.typewrite(Data1)
+    pyautogui.typewrite(Data)
 
-    # PRIMEIRA HORA INICIAL
+    # INÍCIO 
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraInicial1)
+    pyautogui.typewrite(HoraInicial)
 
-    # PRIMEIRA HORA FINAL
+    # FIM 
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraFinal1)
+    pyautogui.typewrite(HoraFinal)
 
-    # NOVA LINHA SEGUNDO FUNCIONÁRIO
+    # NOVA LINHA
     pyautogui.press('enter')
 
     time.sleep(1)
@@ -166,27 +261,31 @@ def obter_texto_e_executar():
     pyautogui.moveTo(1355, 337)
     pyautogui.click()
 
-    # NOME SEGUNDO FUNCIONÁRIO
+    # NOME ( SEGUNDO FUNCIONÁRIO )
     pyautogui.moveTo(567, 559)
     pyautogui.click()
     time.sleep(0.75)
     pyautogui.typewrite(Funcionario2)
 
-    # DATA SEGUNDO FUNCIONÁRIO
+    # DATA ( SEGUNDO FUNCIONÁRIO )
     pyautogui.press('tab')
     pyautogui.press('tab')
     time.sleep(0.75)
-    pyautogui.typewrite(Data1)
+    pyautogui.typewrite(Data)
 
-    # HORA INICIAL SEGUNDO FUNCIONÁRIO
+    # INÍCIO 
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraInicial1)
+    pyautogui.typewrite(HoraInicial)
 
-    # HORA FINAL SEGUNDO FUNCIONÁRIO
+    entry6.delete(0, ctk.END)
+    entry6.insert(0, HoraFinal)
+    entry7.delete(0, ctk.END)
+
+    # FIM
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraFinal1)
+    pyautogui.typewrite(HoraFinal)
 
     # NOVA LINHA TERCEIRO FUNCIONÁRIO
     pyautogui.press('enter')
@@ -201,110 +300,94 @@ def obter_texto_e_executar():
     pyautogui.moveTo(567, 559)
     pyautogui.click()
     time.sleep(0.75)
-    pyautogui.typewrite(Funcionario3)
+    pyautogui.typewrite(Encarregado)
 
     # DATA TERCEIRO FUNCIONÁRIO
     pyautogui.press('tab')
     pyautogui.press('tab')
     time.sleep(0.75)
-    pyautogui.typewrite(Data1)
+    pyautogui.typewrite(Data)
 
     # HORA INICIAL TERCEIRO FUNCIONÁRIO
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraInicial1)
+    pyautogui.typewrite(HoraInicial)
 
     # HORA FINAL TERCEIRO FUNCIONÁRIO
     pyautogui.press('tab')
     time.sleep(1)
-    pyautogui.typewrite(HoraFinal2)
+    pyautogui.typewrite(HoraEncarregado)
 
-    # BOTÃO SALVAR
+    entry8.delete(0, ctk.END)
+
+    # SALVAR
     pyautogui.moveTo(293, 221)
     pyautogui.click()
     time.sleep(2)
-# // OBTER O TEXTO DO TKINTER E EXECUTAR O PYAUTOGUI
 
-# CONFIGURAÇÃO DO TKINTER
-root = tk.Tk()
-root.title("SCRIPT")
-root.resizable(False, False)
-root.configure(bg="#f0f0f0")
+app = ctk.CTk()
+app.title("Programa Python")
+app.geometry("300x450")
+app.resizable(False, False)
 
-# Estilos
-cor_fundo = "#eee"
-cor_botao = "black"
-cor_texto_botao = "white"
-cor_entry = "white"
-fonte_labels = tkfont.Font(family="Segoe UI", size=10)
-fonte_botao = tkfont.Font(family="Segoe UI", size=10, weight="bold")
+cor_fundo_frame = ("gray92", "gray14")
+cor_botao_fg = "blue"
+cor_botao_text = "white"
+cor_entry_fg = ("white", "gray14")
+cor_entry_border = "#c1c1c1"
 
-# Frame principal para organização
-main_frame = tk.Frame(root, bg=cor_fundo)
-main_frame.pack(pady=10)
+main_frame = ctk.CTkFrame(app, fg_color=cor_fundo_frame)
+main_frame.pack(pady=20, padx=20, fill="both", expand=True)
 
-# Função para criar campos de forma consistente
 def criar_campo(frame, texto, linha, autocomplete=False):
-    label = tk.Label(frame, text=texto, bg=cor_fundo, font=fonte_labels)
+    label = ctk.CTkLabel(frame, text=texto, font=ctk.CTkFont(family="Segoe UI", size=13))
     label.grid(row=linha, column=0, padx=10, pady=5, sticky="e")
-    
+
     if autocomplete:
         entry = AutocompleteEntry(
             funcionarios,
-            frame,
-            bg=cor_entry,
-            relief="flat",
-            highlightthickness=1,
-            highlightcolor="#4a7a8c",
-            highlightbackground="#cccccc"
+            master=frame,
+            fg_color=cor_entry_fg,
+            border_width=1,
+            border_color=cor_entry_border,
+            corner_radius=5,
+            height=30
         )
     else:
-        entry = tk.Entry(
+        entry = ctk.CTkEntry(
             frame,
-            bg=cor_entry,
-            relief="flat",
-            highlightthickness=1,
-            highlightcolor="#4a7a8c",
-            highlightbackground="#cccccc"
+            fg_color=cor_entry_fg,
+            border_width=1,
+            border_color=cor_entry_border,
+            corner_radius=5,
+            height=30
         )
-    
-    entry.grid(row=linha, column=1, padx=10, pady=5, ipady=3)
+
+    entry.grid(row=linha, column=1, padx=10, pady=5, sticky="ew")
     return entry
 
-# Criando os campos usando a função
-entry1 = criar_campo(main_frame, "OS:", 0)
-entry2 = criar_campo(main_frame, "Funcionário 1:", 1, autocomplete=True)
-entry3 = criar_campo(main_frame, "Funcionário 2:", 2, autocomplete=True)
-entry4 = criar_campo(main_frame, "Encarregado:", 3, autocomplete=True)
-entry5 = criar_campo(main_frame, "Data:", 4)
-entry6 = criar_campo(main_frame, "Hora Inicial:", 5)
-entry7 = criar_campo(main_frame, "Hora Final:", 6)
-entry8 = criar_campo(main_frame, "Hora Encarregado:", 7)
+entry1 = criar_campo(main_frame, "OS", 0)
+entry2 = criar_campo(main_frame, "Funcionário", 1, autocomplete=True)
+entry3 = criar_campo(main_frame, "Funcionário", 2, autocomplete=True)
+entry4 = criar_campo(main_frame, "Encarregado", 3, autocomplete=True)
+entry5 = criar_campo(main_frame, "Data", 4)
+entry6 = criar_campo(main_frame, "Início", 5)
+entry7 = criar_campo(main_frame, "Fim", 6)
+entry8 = criar_campo(main_frame, "Fim Encarregado", 7)
 
-# Botão estilizado
-botao_enviar = tk.Button(
-    main_frame, 
-    text="INICIAR", 
+botao_enviar = ctk.CTkButton(
+    main_frame,
+    text="Iniciar",
     command=obter_texto_e_executar,
-    bg=cor_botao,
-    fg=cor_texto_botao,
-    font=fonte_botao,
-    relief="flat",
-    padx=20,
-    pady=8,
-    bd=0,
-    activebackground="#0000ff",
-    activeforeground="white"
+    fg_color=cor_botao_fg,
+    text_color=cor_botao_text,
+    hover_color="dodgerblue",
+    corner_radius=50,
+    height=40,
+    font=ctk.CTkFont(size=20, weight="bold") # Adicione esta linha
 )
 botao_enviar.grid(row=9, column=0, columnspan=2, pady=20)
 
-# Adicionando um separador visual antes do botão
-separador = tk.Frame(main_frame, height=2, bg="#cccccc")
-separador.grid(row=8, column=0, columnspan=2, pady=10, sticky="we")
+main_frame.grid_columnconfigure(1, weight=1)
 
-# Centralizar tudo
-for child in main_frame.winfo_children():
-    child.grid_configure(padx=5, pady=2)
-
-root.mainloop()
-# // CONFIGURAÇÃO DO TKINTER
+app.mainloop()
